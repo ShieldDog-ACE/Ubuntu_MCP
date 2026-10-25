@@ -8,6 +8,32 @@
 
 An MCP server that provides Chrome-extension-level semantic element targeting for native Linux desktop applications using AT-SPI2 (Assistive Technology Service Provider Interface).
 
+> ### ⚠️ 本仓库是衍生版本（Derivative Work）
+>
+> 本仓库并非原创项目，而是以下游开源项目的**适配版本**：
+>
+> - **上游项目**：[`BeckhamLabsLLC/linux-desktop-mcp`](https://github.com/BeckhamLabsLLC/linux-desktop-mcp)
+> - **上游版本**：v0.2.0
+> - **上游版权**：Copyright © 2025 Austin Beck，以 MIT License 发布
+> - **本仓库维护者**：[ShieldDog-ACE](https://github.com/ShieldDog-ACE)
+>
+> 本仓库在上游代码基础上只做了**本地化适配**，未改动上游核心的 AT-SPI2 语义定位与输入后端逻辑。具体差异见下方 [本地适配改动](#本地适配改动)。
+>
+> 上游代码版权归原作者所有。本仓库沿用上游的 **MIT License**（见 [LICENSE](LICENSE)），上游版权声明完整保留。
+
+## 本地适配改动
+
+相对上游 v0.2.0，本仓库的改动如下：
+
+| 类型 | 文件 | 说明 |
+|---|---|---|
+| 新增 | `src/linux_desktop_mcp/system_tools.py` | 4 个系统级桌面工具的实现，参考 [Windows-MCP](https://github.com/CursorTouch/Windows-MCP) 的工具集设计移植到 Linux |
+| 修改 | `src/linux_desktop_mcp/tool_definitions.py` | 注册上述 4 个工具的定义 |
+| 修改 | `src/linux_desktop_mcp/handlers.py` | 将 4 个工具接入 `HANDLER_MAP` 派发表 |
+| 修改 | `pyproject.toml` | 依赖收敛为 `mcp>=1.0.0,<2`，避免 MCP SDK 2.x 的破坏性变更 |
+
+目标很直接：**在 Ubuntu 上让 AI 直接操控桌面** —— 既能按语义引用点控件，也能执行命令、读写剪贴板、启动应用、发通知。
+
 ## Features
 
 - **Semantic Element References**: Just like Chrome extension's `ref_1`, `ref_2` system
@@ -40,9 +66,9 @@ sudo ydotoold &
 # From PyPI
 pip install linux-desktop-mcp
 
-# Or from source
-git clone https://github.com/BeckhamLabsLLC/linux-desktop-mcp.git
-cd linux-desktop-mcp
+# Or from source (this adapted repository)
+git clone https://github.com/ShieldDog-ACE/Ubuntu_MCP.git
+cd Ubuntu_MCP
 pip install -e .
 ```
 
@@ -153,6 +179,65 @@ Parameters:
 ### `desktop_capabilities`
 
 Check available automation capabilities.
+
+### 系统级工具（本地适配新增）
+
+以下 4 个工具由本仓库新增，设计参考 Windows-MCP 的同名能力，移植到 Linux 桌面。
+
+#### `desktop_shell`
+
+在系统上执行 bash 命令（带危险命令拦截）。
+
+```
+Parameters:
+  command: str - 要执行的 bash 命令（最长 5000 字符）
+  timeout: int (default: 30, max: 300) - 超时秒数
+
+Returns:
+  exit code + 合并后的 stdout/stderr（截断至 10000 字符）
+```
+
+内置危险命令拦截（正则匹配即拒绝）：`shutdown`/`reboot`/`poweroff`、`mkfs`、
+`dd if=`、`rm -rf /`、`rm -rf ~`、fork bomb、`chmod -R 777 /`、覆盖块设备等。
+
+#### `desktop_clipboard`
+
+读取或写入系统剪贴板文本（Wayland 用 `wl-clipboard`，X11 用 `xclip`）。
+
+```
+Parameters:
+  action: get|set - 读取或写入
+  text: str - action=set 时要写入的文本
+
+Returns:
+  action=get 时返回当前剪贴板文本；action=set 时返回确认信息
+```
+
+#### `desktop_launch`
+
+按名称启动已安装的桌面应用（解析 `.desktop` 启动项）。
+
+```
+Parameters:
+  app: str - 应用名或 .desktop 文件名（如 "firefox"、"code"）
+
+Returns:
+  启动结果与进程信息
+```
+
+#### `desktop_notify`
+
+发送桌面通知（基于 `notify-send`）。
+
+```
+Parameters:
+  title: str - 通知标题
+  message: str - 通知正文
+  urgency: low|normal|critical (optional) - 紧急程度
+
+Returns:
+  发送结果
+```
 
 ## Example Usage
 
@@ -316,4 +401,8 @@ See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for our full privacy policy. In short
 
 ## License
 
-MIT - See [LICENSE](LICENSE) for details.
+**MIT** - See [LICENSE](LICENSE) for details.
+
+本仓库是 [`BeckhamLabsLLC/linux-desktop-mcp`](https://github.com/BeckhamLabsLLC/linux-desktop-mcp) 的衍生版本，
+因此 `LICENSE` 中保留上游原始版权声明 `Copyright (c) 2025 Austin Beck`。MIT 协议允许修改、再分发与商用，
+但要求保留该版权声明与本许可声明——本仓库遵守这一要求。本仓库新增部分的适配工作由 ShieldDog-ACE 完成。

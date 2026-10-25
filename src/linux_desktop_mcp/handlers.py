@@ -650,6 +650,16 @@ async def handle_release_window(ctx: ServerContext, args: dict[str, Any]) -> lis
 # Handler dispatch map
 # ---------------------------------------------------------------------------
 
+# System tools added by local tuning (modeled on Windows-MCP toolset).
+# Imported here (after this module's constants/classes are defined) to avoid a
+# circular import, since system_tools imports MAX_TEXT_LENGTH / ServerContext.
+from .system_tools import (  # noqa: E402
+    handle_clipboard,
+    handle_launch,
+    handle_notify,
+    handle_shell,
+)
+
 HANDLER_MAP: dict[str, Any] = {
     "desktop_snapshot": handle_snapshot,
     "desktop_find": handle_find,
@@ -661,4 +671,9 @@ HANDLER_MAP: dict[str, Any] = {
     "desktop_target_window": handle_target_window,
     "desktop_create_window_group": handle_create_window_group,
     "desktop_release_window": handle_release_window,
+    # System tools added by local tuning (modeled on Windows-MCP toolset)
+    "desktop_shell": handle_shell,
+    "desktop_clipboard": handle_clipboard,
+    "desktop_launch": handle_launch,
+    "desktop_notify": handle_notify,
 }

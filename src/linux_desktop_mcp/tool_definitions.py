@@ -236,4 +236,89 @@ def get_tool_definitions() -> list[Tool]:
             },
             annotations=ToolAnnotations(idempotentHint=True),
         ),
+        # --- System tools added by local tuning (modeled on Windows-MCP toolset) ---
+        Tool(
+            name="desktop_shell",
+            description="Execute a bash command on the system (modeled on Windows-MCP's "
+            "PowerShell tool). Use it to navigate the file system, manage files and "
+            "processes, and run system-level operations. Dangerous commands "
+            "(shutdown/reboot, mkfs, dd, rm -rf /, fork bombs, etc.) are blocked.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "The bash command to execute"},
+                    "timeout": {
+                        "type": "integer",
+                        "description": "Timeout in seconds (default: 30, max: 300)",
+                        "default": 30,
+                    },
+                    "cwd": {
+                        "type": "string",
+                        "description": "Working directory for the command (optional)",
+                    },
+                },
+                "required": ["command"],
+            },
+            annotations=ToolAnnotations(destructiveHint=True),
+        ),
+        Tool(
+            name="desktop_clipboard",
+            description="Read or write the system clipboard text (modeled on Windows-MCP's "
+            "Clipboard tool). Uses wl-clipboard on Wayland, xclip on X11.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "enum": ["get", "set"],
+                        "description": "'get' to read clipboard, 'set' to write it",
+                        "default": "get",
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "Text to put on the clipboard (required for set mode)",
+                    },
+                },
+            },
+            annotations=ToolAnnotations(destructiveHint=True),
+        ),
+        Tool(
+            name="desktop_launch",
+            description="Launch an installed desktop application by name (modeled on "
+            "Windows-MCP's App/Launch tool). Matches against .desktop entries "
+            "(partial, case-insensitive match supported).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "app_name": {
+                        "type": "string",
+                        "description": "Application name or .desktop ID (e.g., 'firefox', 'files')",
+                    },
+                },
+                "required": ["app_name"],
+            },
+            annotations=ToolAnnotations(destructiveHint=True),
+        ),
+        Tool(
+            name="desktop_notify",
+            description="Send a desktop notification (modeled on Windows-MCP's "
+            "Notification tool, implemented with notify-send).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Notification title"},
+                    "body": {
+                        "type": "string",
+                        "description": "Notification body text (optional)",
+                    },
+                    "urgency": {
+                        "type": "string",
+                        "enum": ["low", "normal", "critical"],
+                        "description": "Notification urgency (default: normal)",
+                        "default": "normal",
+                    },
+                },
+            },
+            annotations=ToolAnnotations(idempotentHint=True),
+        ),
     ]
